@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Confirmaciones · Fabián y Ximena</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Pinyon+Script&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--lino:#F4F0E4;--papel:#FDFBF5;--arena:#C9A35F;--cafe:#34492A;--cafe-suave:#56654A;--linea:#E0E4D2;--si:#3B5230;--no:#A23B2A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--lino:#182014;--papel:#212A1B;--arena:#C9A35F;--cafe:#EEF0E2;--cafe-suave:#C9D1B8;--linea:#3A4630;--si:#A9CC99;--no:#F0A08A}}
+:root[data-theme="dark"]{color-scheme:dark;--lino:#182014;--papel:#212A1B;--arena:#C9A35F;--cafe:#EEF0E2;--cafe-suave:#C9D1B8;--linea:#3A4630;--si:#A9CC99;--no:#F0A08A}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--lino);color:var(--cafe);font-family:"EB Garamond",Georgia,serif;font-size:19px;line-height:1.5}
+main{max-width:640px;margin:0 auto;padding:2rem 1rem 3rem}
+h1{font-family:"Pinyon Script",cursive;font-weight:400;font-size:2.6rem;line-height:1.1;margin:0;text-align:center}
+.estado{text-align:center;color:var(--cafe-suave);margin:.3rem 0 1.6rem}
+.resumen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin-bottom:2rem;text-align:center}
+.resumen div{background:var(--papel);border:1px solid var(--linea);border-radius:14px;padding:.9rem .4rem}
+.resumen strong{display:block;font-size:2.2rem;line-height:1.1;font-weight:500}
+.resumen span{font-size:.95rem;color:var(--cafe-suave)}
+h2{font-size:1.3rem;font-weight:600;margin:1.6rem 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid var(--arena)}
+h2.si{color:var(--si)} h2.no{color:var(--no)}
+ul{list-style:none;margin:0;padding:0}
+li{padding:.7rem 0;border-bottom:1px solid var(--linea)}
+li b{font-weight:600}
+li small{color:var(--cafe-suave);font-size:.9rem}
+li i{display:block;color:var(--cafe-suave)}
+.vacio{color:var(--cafe-suave);font-style:italic}
+button{display:block;margin:2rem auto 0;min-height:50px;padding:0 1.4rem;border-radius:999px;border:1.5px solid var(--arena);background:var(--papel);color:var(--cafe);font:inherit;font-size:1rem;cursor:pointer}
+button:focus-visible{outline:3px solid var(--cafe);outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Fabián y Ximena</h1>
+  <p class="estado" id="estado">Cargando confirmaciones…</p>
+
+  <div class="resumen">
+    <div><strong id="n-personas">0</strong><span>personas van</span></div>
+    <div><strong id="n-si">0</strong><span>confirmaciones</span></div>
+  </div>
+
+  <h2 class="si">Confirmados</h2>
+  <ul id="lista-si"></ul>
+
+  <button type="button" id="descargar">Descargar lista en Excel</button>
+</main>
+
+<script>
+(function(){
+  var datos = [];
+  var $ = function(id){ return document.getElementById(id); };
+  var norm = function(t){ return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim(); };
+  var fecha = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+  // Si alguien respondió dos veces, cuenta solo su última respuesta
+  function unificar(rs){
+    var m = {};
+    rs.forEach(function(r){
+      if (!r.nombre) return;
+      var k = norm(r.nombre);
+      if (!m[k] || new Date(r.fecha) > new Date(m[k].fecha)) m[k] = r;
+    });
+    return Object.keys(m).map(function(k){ return m[k]; }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre, 'es'); });
+  }
+
+  function lista(ul, items, conPersonas){
+    ul.textContent = '';
+    if (!items.length){
+      var v = document.createElement('li'); v.className = 'vacio'; v.textContent = 'Nadie todavía.'; ul.appendChild(v); return;
+    }
+    items.forEach(function(d){
+      var li = document.createElement('li');
+      var b = document.createElement('b'); b.textContent = d.nombre; li.appendChild(b);
+      var s = document.createElement('small');
+      s.textContent = (conPersonas ? ' · ' + d.personas + (d.personas === 1 ? ' persona' : ' personas') : '') + ' · ' + fecha.format(new Date(d.fecha));
+      li.appendChild(s);
+      if (d.mensaje){ var i = document.createElement('i'); i.textContent = '“' + d.mensaje + '”'; li.appendChild(i); }
+      ul.appendChild(li);
+    });
+  }
+
+  fetch('/.netlify/functions/confirmados')
+    .then(function(r){ return r.json().then(function(j){ if (!r.ok) throw j; return j; }); })
+    .then(function(j){
+      datos = unificar(j.respuestas || []);
+      var si = datos.filter(function(d){ return d.asiste; });
+      $('n-personas').textContent = si.reduce(function(t, d){ return t + (d.personas || 1); }, 0);
+      $('n-si').textContent = si.length;
+      lista($('lista-si'), si, true);
+      $('estado').textContent = si.length + (si.length === 1 ? ' confirmación' : ' confirmaciones') + ' hasta ahora';
+    })
+    .catch(function(e){
+      $('estado').textContent = e && e.error === 'config'
+        ? 'Falta configurar el panel en Netlify.'
+        : 'No se pudieron cargar las confirmaciones. Recarga la página.';
+    });
+
+  $('descargar').addEventListener('click', function(){
+    var c = function(t){ return '"' + String(t).replace(/"/g, '""') + '"'; };
+    var filas = [['Nombre', 'Personas', 'Fecha de confirmación'].map(c).join(';')];
+    datos.filter(function(d){ return d.asiste; }).forEach(function(d){ filas.push([d.nombre, d.personas, new Date(d.fecha).toLocaleString('es-CO')].map(c).join(';')); });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + filas.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'confirmaciones-fabian-ximena.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  });
+})();
+</script>
+</body>
+</html>

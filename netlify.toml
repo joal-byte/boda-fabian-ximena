@@ -1,0 +1,8 @@
+[functions]
+  directory = "netlify/functions"
+
+# El panel no debe aparecer en Google
+[[headers]]
+  for = "/panel*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
