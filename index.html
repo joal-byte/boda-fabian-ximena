@@ -394,7 +394,16 @@ textarea.entrada{min-height:110px;resize:vertical}
 .btn-confirmar:hover,.btn-confirmar:focus-visible{background:#5E7F49;border-color:#5E7F49}
 .btn-confirmar:active{background:#6F9257;border-color:#6F9257}
 @keyframes llamar-verde{0%,100%{box-shadow:0 8px 20px var(--sombra)}50%{box-shadow:0 8px 20px var(--sombra),0 0 0 7px rgba(94,127,73,.25)}}
-.campo-personas{display:flex;align-items:center;justify-content:space-between;gap:.8rem 1rem;flex-wrap:wrap}
+.campo-personas{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:nowrap}
+.campo-personas > div:first-child{flex:1;min-width:0}
+.campo-personas .contador{flex:none}
+@media (max-width:480px){
+  .campo-personas .contador{gap:.35rem}
+  .campo-personas .contador button{width:40px;height:40px;font-size:1.2rem}
+  .campo-personas .contador output{min-width:1.6rem;font-size:1.45rem}
+  .campo-personas .etiqueta{font-size:1rem}
+  .campo-personas .ayuda{font-size:.85rem}
+}
 .campo-personas .etiqueta{margin-bottom:.1rem}
 .campo-personas .ayuda{margin:0}
 .campo-personas .contador{gap:.6rem}
